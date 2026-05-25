@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Project 1 — Java Todo Application</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:          #0a0c10;
+            --surface:     #0f1318;
+            --surface2:    #161b22;
+            --border:      #21262d;
+            --border2:     #30363d;
+            --accent:      #f78166;
+            --accent2:     #79c0ff;
+            --accent3:     #56d364;
+            --accent4:     #e3b341;
+            --text:        #e6edf3;
+            --text-muted:  #7d8590;
+            --text-dim:    #484f58;
+            --glow:        rgba(247, 129, 102, 0.15);
+            --glow2:       rgba(121, 192, 255, 0.12);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Grid background ───────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(121,192,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(121,192,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Glow orbs ─────────────────────────────────────── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 600px; height: 600px; top: -200px; right: -100px; background: rgba(247,129,102,0.06); }
+        .orb-2 { width: 500px; height: 500px; bottom: -100px; left: -100px; background: rgba(121,192,255,0.06); }
+
+        /* ── Layout ────────────────────────────────────────── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+        /* ── Top bar ───────────────────────────────────────── */
+        .topbar {
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            background: rgba(10,12,16,0.92);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+        .topbar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent3);
+            box-shadow: 0 0 8px var(--accent3);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.4; }
+        }
+        .topbar-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .topbar-right {
+            display: flex;
+            gap: 24px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .topbar-right a {
+            color: var(--text-muted);
+            text-decoration: none;
+            letter-spacing: 0.08em;
+            transition: color 0.2s;
+        }
+        .topbar-right a:hover { color: var(--accent2); }
+
+        /* ── Hero ──────────────────────────────────────────── */
+        .hero {
+            padding: 80px 0 60px;
+            border-bottom: 1px solid var(--border);
+        }
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 500;
+            border: 1px solid;
+        }
+        .badge-orange { color: var(--accent);  border-color: rgba(247,129,102,0.3); background: rgba(247,129,102,0.08); }
+        .badge-blue   { color: var(--accent2); border-color: rgba(121,192,255,0.3); background: rgba(121,192,255,0.08); }
+        .badge-green  { color: var(--accent3); border-color: rgba(86,211,100,0.3);  background: rgba(86,211,100,0.08); }
+        .badge-yellow { color: var(--accent4); border-color: rgba(227,179,65,0.3);  background: rgba(227,179,65,0.08); }
+
+        .hero-label {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(36px, 6vw, 72px);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .hero-title span { color: var(--accent2); }
+        .hero-subtitle {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(18px, 3vw, 28px);
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        .hero-desc {
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--text-muted);
+            max-width: 620px;
+            margin-bottom: 36px;
+        }
+        .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: 1px solid;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #0a0c10;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover { background: #ff9980; border-color: #ff9980; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--border2);
+        }
+        .btn-outline:hover { border-color: var(--accent2); color: var(--accent2); transform: translateY(-1px); }
+
+        /* ── Stats bar ─────────────────────────────────────── */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 48px 0;
+        }
+        .stat-cell {
+            background: var(--surface);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+        .stat-value.live { color: var(--accent3); }
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+        }
+
+        /* ── Section titles ────────────────────────────────── */
+        .section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .section-num {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+        }
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Tech stack grid ───────────────────────────────── */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .tech-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--card-accent, var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+        .tech-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+        .tech-card:hover::before { transform: scaleX(1); }
+        .tech-icon {
+            font-size: 22px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .tech-name {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .tech-detail {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ── API endpoints ─────────────────────────────────── */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .api-table tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+        .api-table tr:hover { background: var(--surface); }
+        .api-table td { padding: 12px 16px; vertical-align: middle; }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            min-width: 56px;
+            text-align: center;
+        }
+        .method-get    { background: rgba(86,211,100,0.15);  color: var(--accent3); }
+        .method-post   { background: rgba(121,192,255,0.15); color: var(--accent2); }
+        .method-put    { background: rgba(227,179,65,0.15);  color: var(--accent4); }
+        .method-delete { background: rgba(247,129,102,0.15); color: var(--accent);  }
+        .method-patch  { background: rgba(188,140,255,0.15); color: #bc8cff; }
+        .endpoint-path { color: var(--accent2); font-family: 'JetBrains Mono', monospace; }
+        .endpoint-desc { color: var(--text-muted); }
+
+        /* ── Build pipeline ────────────────────────────────── */
+        .pipeline {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .pipeline-step {
+            flex: 1;
+            min-width: 140px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-right: none;
+            padding: 20px 16px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .pipeline-step:first-child { border-radius: 8px 0 0 8px; }
+        .pipeline-step:last-child  { border-radius: 0 8px 8px 0; border-right: 1px solid var(--border); }
+        .pipeline-step:hover { background: var(--surface2); }
+        .pipeline-step::after {
+            content: '›';
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--border2);
+            font-size: 20px;
+            z-index: 2;
+        }
+        .pipeline-step:last-child::after { display: none; }
+        .pipeline-num {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .pipeline-name {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .pipeline-cmd {
+            font-size: 10px;
+            color: var(--accent3);
+        }
+
+        /* ── Terminal block ────────────────────────────────── */
+        .terminal {
+            background: #010409;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 24px 0;
+        }
+        .terminal-bar {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red    { background: #ff5f57; }
+        .dot-yellow { background: #febc2e; }
+        .dot-green  { background: #28c840; }
+        .terminal-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+        .terminal-body { padding: 20px 24px; }
+        .line { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.6; }
+        .prompt { color: var(--accent3); user-select: none; }
+        .cmd    { color: var(--text); }
+        .out    { color: var(--text-muted); padding-left: 16px; }
+        .out.success { color: var(--accent3); }
+        .out.info    { color: var(--accent2); }
+        .out.warn    { color: var(--accent4); }
+
+        /* ── Live API panel ────────────────────────────────── */
+        .live-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .live-panel-header {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .live-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--accent3);
+        }
+        .live-body { padding: 20px; }
+        #live-output {
+            font-size: 11px;
+            line-height: 1.8;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 120px;
+        }
+        .loading-text { color: var(--text-dim); animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ── Todo demo ─────────────────────────────────────── */
+        .todo-demo { display: flex; flex-direction: column; gap: 0; }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            animation: fadeIn 0.4s ease both;
+        }
+        .todo-item:last-child { border-bottom: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+        .todo-check {
+            width: 16px; height: 16px;
+            border-radius: 3px;
+            border: 1px solid var(--border2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+        .todo-check.done { background: var(--accent3); border-color: var(--accent3); color: #0a0c10; }
+        .todo-text { flex: 1; color: var(--text); }
+        .todo-text.done { color: var(--text-dim); text-decoration: line-through; }
+        .todo-priority {
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid;
+        }
+        .pri-high   { color: var(--accent);  border-color: rgba(247,129,102,0.3); }
+        .pri-medium { color: var(--accent4); border-color: rgba(227,179,65,0.3);  }
+        .pri-low    { color: var(--text-dim); border-color: var(--border2); }
+
+        /* ── Architecture diagram ──────────────────────────── */
+        .arch-diagram {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+            gap: 0;
+            align-items: center;
+            padding: 32px 0;
+            overflow-x: auto;
+        }
+        .arch-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 12px;
+            text-align: center;
+            min-width: 110px;
+        }
+        .arch-icon { font-size: 24px; margin-bottom: 6px; display: block; }
+        .arch-name {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+        .arch-sub { font-size: 10px; color: var(--text-muted); }
+        .arch-arrow {
+            text-align: center;
+            color: var(--border2);
+            font-size: 20px;
+            padding: 0 8px;
+        }
+
+        /* ── Footer ────────────────────────────────────────── */
+        .footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+        }
+        .footer-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .footer-left { font-size: 11px; color: var(--text-muted); line-height: 1.8; }
+        .footer-right { display: flex; gap: 20px; }
+        .footer-link {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-link:hover { color: var(--accent2); }
+
+        /* ── Animations ────────────────────────────────────── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* Stagger children */
+        .stagger > * { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .stagger.visible > *:nth-child(1) { opacity:1; transform:none; transition-delay: 0s; }
+        .stagger.visible > *:nth-child(2) { opacity:1; transform:none; transition-delay:.08s; }
+        .stagger.visible > *:nth-child(3) { opacity:1; transform:none; transition-delay:.16s; }
+        .stagger.visible > *:nth-child(4) { opacity:1; transform:none; transition-delay:.24s; }
+        .stagger.visible > *:nth-child(5) { opacity:1; transform:none; transition-delay:.32s; }
+        .stagger.visible > *:nth-child(6) { opacity:1; transform:none; transition-delay:.40s; }
+        .stagger.visible > *:nth-child(7) { opacity:1; transform:none; transition-delay:.48s; }
+        .stagger.visible > *:nth-child(8) { opacity:1; transform:none; transition-delay:.56s; }
+
+        @media (max-width: 768px) {
+            .container { padding: 0 20px; }
+            .hero { padding: 48px 0 40px; }
+            .arch-diagram { grid-template-columns: 1fr; gap: 8px; }
+            .arch-arrow { transform: rotate(90deg); }
+            .pipeline { flex-direction: column; }
+            .pipeline-step { border-right: 1px solid var(--border); border-bottom: none; border-radius: 0; }
+            .pipeline-step:first-child { border-radius: 8px 8px 0 0; }
+            .pipeline-step:last-child  { border-radius: 0 0 8px 8px; border-bottom: 1px solid var(--border); }
+            .pipeline-step::after { content: '↓'; right: auto; left: 50%; top: auto; bottom: -14px; }
+            .topbar-right { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- ── Top bar ──────────────────────────────────────────────── -->
+<nav class="topbar">
+    <div class="container">
+        <div class="topbar-inner">
+            <div class="topbar-left">
+                <div class="status-dot"></div>
+                <span class="topbar-label">devops-project-1 / todo-app / v1.0.0</span>
+            </div>
+            <div class="topbar-right">
+                <a href="/todo-app/actuator/health" target="_blank">actuator/health</a>
+                <a href="/todo-app/api/todos" target="_blank">api/todos</a>
+                <a href="/todo-app/h2-console" target="_blank">h2-console</a>
+                <a href="/todo-app/api/info" target="_blank">api/info</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<section class="hero">
+    <div class="container">
+        <div class="badge-row reveal">
+            <span class="badge badge-orange">Project 1</span>
+            <span class="badge badge-blue">Spring Boot 3.x</span>
+            <span class="badge badge-green">Tomcat 10</span>
+            <span class="badge badge-yellow">Maven Build</span>
+        </div>
+        <p class="hero-label reveal">DevOps Engineering Series</p>
+        <h1 class="hero-title reveal">Java Todo<br><span>Application</span></h1>
+        <p class="hero-subtitle reveal">Essential for DevOps Engineers</p>
+        <p class="hero-desc reveal">
+            A production-grade Java web application demonstrating the full DevOps lifecycle —
+            Maven build management, WAR packaging, external Tomcat deployment, REST API design,
+            JPA persistence, health monitoring via Spring Actuator, and containerisation readiness.
+        </p>
+        <div class="hero-actions reveal">
+            <a href="/todo-app/api/todos" class="btn btn-primary" target="_blank">
+                <span>▶</span> Explore API
+            </a>
+            <a href="/todo-app/actuator/health" class="btn btn-outline" target="_blank">
+                <span>◎</span> Health Check
+            </a>
+            <a href="/todo-app/h2-console" class="btn btn-outline" target="_blank">
+                <span>⊞</span> H2 Console
+            </a>
+        </div>
+
+        <!-- Live stats -->
+        <div class="stats-bar reveal">
+            <div class="stat-cell">
+                <span class="stat-value" id="stat-total">—</span>
+                <span class="stat-label">Total Tasks</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-value live" id="stat-completed">—</span>
+                <span class="stat-label">Completed</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-value" id="stat-pending">—</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-value" style="color:var(--accent2)">WAR</span>
+                <span class="stat-label">Packaging</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-value" style="color:var(--accent4)">Java 17</span>
+                <span class="stat-label">Runtime</span>
+            </div>
+            <div class="stat-cell">
+                <span class="stat-value" style="font-size:18px; color:var(--accent3)" id="stat-uptime">ONLINE</span>
+                <span class="stat-label">Server Status</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Architecture ──────────────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">01</span>
+            <h2 class="section-title">Application Architecture</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="arch-diagram reveal">
+            <div class="arch-box">
+                <span class="arch-icon">🌐</span>
+                <div class="arch-name">Browser</div>
+                <div class="arch-sub">HTTP Client</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box" style="border-color: rgba(247,129,102,0.4);">
+                <span class="arch-icon">🐱</span>
+                <div class="arch-name">Tomcat 10</div>
+                <div class="arch-sub">Servlet Container</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box" style="border-color: rgba(121,192,255,0.4);">
+                <span class="arch-icon">🍃</span>
+                <div class="arch-name">Spring Boot</div>
+                <div class="arch-sub">REST / MVC Layer</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box" style="border-color: rgba(86,211,100,0.4);">
+                <span class="arch-icon">🗄</span>
+                <div class="arch-name">H2 Database</div>
+                <div class="arch-sub">JPA / Hibernate</div>
+            </div>
+        </div>
+        <div class="terminal reveal">
+            <div class="terminal-bar">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+                <span class="terminal-title">Request flow trace</span>
+            </div>
+            <div class="terminal-body">
+                <div class="line"><span class="prompt">$</span><span class="cmd">curl -X POST /todo-app/api/todos -d '{"title":"Deploy to Tomcat","priority":"HIGH"}'</span></div>
+                <div class="line out info">  → Tomcat receives HTTP request on port 8080</div>
+                <div class="line out info">  → Spring DispatcherServlet routes to TodoController.createTodo()</div>
+                <div class="line out info">  → @Valid annotation validates request body</div>
+                <div class="line out info">  → TodoService.createTodo() persists via JpaRepository</div>
+                <div class="line out info">  → Hibernate executes INSERT INTO todos ...</div>
+                <div class="line out success">  ← HTTP 201 Created {"id":9,"title":"Deploy to Tomcat","priority":"HIGH",...}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Tech Stack ────────────────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">02</span>
+            <h2 class="section-title">Technology Stack</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="tech-grid stagger">
+            <div class="tech-card" style="--card-accent: var(--accent);">
+                <span class="tech-icon">☕</span>
+                <div class="tech-name">Java 17 LTS</div>
+                <div class="tech-detail">Records, sealed classes, text blocks. Target runtime for production deployments. Required for Spring Boot 3.x.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent2);">
+                <span class="tech-icon">🍃</span>
+                <div class="tech-name">Spring Boot 3.2.5</div>
+                <div class="tech-detail">Jakarta EE 10 namespace. Auto-configuration, embedded server, production-ready defaults. WAR deployment support.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: #e05d44;">
+                <span class="tech-icon">🐱</span>
+                <div class="tech-name">Apache Tomcat 10</div>
+                <div class="tech-detail">Jakarta Servlet 6.0 container. Hosts the deployed WAR. External instance replaces Spring's embedded Tomcat.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent4);">
+                <span class="tech-icon">⚙️</span>
+                <div class="tech-name">Apache Maven 3.x</div>
+                <div class="tech-detail">Build lifecycle management: validate → compile → test → package → install → deploy. Produces todo-app.war.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent3);">
+                <span class="tech-icon">🗄</span>
+                <div class="tech-name">Spring Data JPA + H2</div>
+                <div class="tech-detail">Hibernate ORM with H2 in-memory database. Zero external DB required. Swap to PostgreSQL/MySQL for production.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: #bc8cff;">
+                <span class="tech-icon">❤</span>
+                <div class="tech-name">Spring Actuator</div>
+                <div class="tech-detail">Health checks, metrics, and environment info at /actuator/*. Essential for monitoring in production environments.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent2);">
+                <span class="tech-icon">✅</span>
+                <div class="tech-name">Bean Validation</div>
+                <div class="tech-detail">Jakarta Validation API with @NotBlank, @Size annotations. Request body validation with automatic 400 responses.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent);">
+                <span class="tech-icon">🐳</span>
+                <div class="tech-name">Docker Ready</div>
+                <div class="tech-detail">Dockerfile included for containerisation. Multi-stage build: Maven compile → Tomcat runtime image. CI/CD pipeline ready.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Maven Build Pipeline ──────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">03</span>
+            <h2 class="section-title">Maven Build Pipeline</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="pipeline reveal">
+            <div class="pipeline-step">
+                <div class="pipeline-num">Phase 1</div>
+                <div class="pipeline-name">Validate</div>
+                <div class="pipeline-cmd">pom.xml check</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-num">Phase 2</div>
+                <div class="pipeline-name">Compile</div>
+                <div class="pipeline-cmd">javac → .class</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-num">Phase 3</div>
+                <div class="pipeline-name">Test</div>
+                <div class="pipeline-cmd">JUnit 5 suite</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-num">Phase 4</div>
+                <div class="pipeline-name">Package</div>
+                <div class="pipeline-cmd">→ todo-app.war</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="pipeline-num">Phase 5</div>
+                <div class="pipeline-name">Deploy</div>
+                <div class="pipeline-cmd">→ webapps/</div>
+            </div>
+        </div>
+
+        <div class="terminal reveal" style="margin-top:24px;">
+            <div class="terminal-bar">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+                <span class="terminal-title">Build &amp; deploy commands</span>
+            </div>
+            <div class="terminal-body">
+                <div class="line"><span class="prompt">$</span><span class="cmd">mvn clean package -DskipTests</span></div>
+                <div class="line out"># Produces: target/todo-app.war (~15MB)</div>
+                <div class="line">&nbsp;</div>
+                <div class="line"><span class="prompt">$</span><span class="cmd">sudo cp target/todo-app.war /var/lib/tomcat10/webapps/</span></div>
+                <div class="line out"># Tomcat auto-deploys on file detection</div>
+                <div class="line">&nbsp;</div>
+                <div class="line"><span class="prompt">$</span><span class="cmd">sudo tail -f /var/log/tomcat10/catalina.out</span></div>
+                <div class="line out success"># [INFO] Deployment of web application archive [todo-app.war] finished in [4,821] ms</div>
+                <div class="line">&nbsp;</div>
+                <div class="line"><span class="prompt">$</span><span class="cmd">curl http://localhost:8080/todo-app/actuator/health</span></div>
+                <div class="line out success"># {"status":"UP","components":{"db":{"status":"UP"},"diskSpace":{"status":"UP"}}}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── REST API Reference ────────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">04</span>
+            <h2 class="section-title">REST API Reference</h2>
+            <div class="section-line"></div>
+        </div>
+        <table class="api-table reveal">
+            <tbody>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/api/todos</td>
+                    <td class="endpoint-desc">Retrieve all todo items</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/api/todos/{id}</td>
+                    <td class="endpoint-desc">Retrieve a single todo by ID</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-post">POST</span></td>
+                    <td class="endpoint-path">/api/todos</td>
+                    <td class="endpoint-desc">Create a new todo (JSON body required)</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td class="endpoint-path">/api/todos/{id}</td>
+                    <td class="endpoint-desc">Replace a todo entirely</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-delete">DELETE</span></td>
+                    <td class="endpoint-path">/api/todos/{id}</td>
+                    <td class="endpoint-desc">Delete a todo, returns 204 No Content</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-patch">PATCH</span></td>
+                    <td class="endpoint-path">/api/todos/{id}/toggle</td>
+                    <td class="endpoint-desc">Toggle completed status</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/api/todos/stats</td>
+                    <td class="endpoint-desc">Aggregate counts: total / completed / pending</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/api/todos/filter?completed=true</td>
+                    <td class="endpoint-desc">Filter by status or priority</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/api/info</td>
+                    <td class="endpoint-desc">Application metadata and runtime info</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/actuator/health</td>
+                    <td class="endpoint-desc">Spring Actuator health check (DB + disk)</td>
+                </tr>
+                <tr>
+                    <td><span class="method method-get">GET</span></td>
+                    <td class="endpoint-path">/h2-console</td>
+                    <td class="endpoint-desc">H2 database web console (dev only)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ── Live Application ──────────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">05</span>
+            <h2 class="section-title">Live Application Data</h2>
+            <div class="section-line"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="reveal">
+            <!-- Live todos -->
+            <div class="live-panel">
+                <div class="live-panel-header">
+                    <span class="live-title">Active Todos — /api/todos</span>
+                    <div class="live-badge"><div class="status-dot" style="width:6px;height:6px;"></div>Live</div>
+                </div>
+                <div class="live-body">
+                    <div class="todo-demo" id="todo-list">
+                        <div class="line out loading-text">Fetching from API...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- App info -->
+            <div class="live-panel">
+                <div class="live-panel-header">
+                    <span class="live-title">Runtime Info — /api/info</span>
+                    <div class="live-badge"><div class="status-dot" style="width:6px;height:6px;"></div>Live</div>
+                </div>
+                <div class="live-body">
+                    <pre id="live-output"><span class="loading-text">Fetching from server...</span></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── DevOps Notes ──────────────────────────────────────────── -->
+<section class="section">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-num">06</span>
+            <h2 class="section-title">DevOps Engineer Notes</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="tech-grid stagger">
+            <div class="tech-card" style="--card-accent: var(--accent);">
+                <span class="tech-icon">⚠️</span>
+                <div class="tech-name">Tomcat Version Matters</div>
+                <div class="tech-detail">Spring Boot 3.x requires Tomcat 10+ (jakarta.* namespace). Tomcat 9 uses javax.* and will throw ClassNotFoundException at deployment.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent2);">
+                <span class="tech-icon">🔒</span>
+                <div class="tech-name">Disable H2 in Production</div>
+                <div class="tech-detail">Set spring.h2.console.enabled=false in production profile. Replace H2 with PostgreSQL or MySQL via spring.datasource.* properties.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent3);">
+                <span class="tech-icon">📊</span>
+                <div class="tech-name">Actuator for Monitoring</div>
+                <div class="tech-detail">Expose /actuator/health to load balancer health checks. Wire /actuator/metrics to Prometheus + Grafana for production observability.</div>
+            </div>
+            <div class="tech-card" style="--card-accent: var(--accent4);">
+                <span class="tech-icon">🐳</span>
+                <div class="tech-name">Containerise This App</div>
+                <div class="tech-detail">Use the included Dockerfile for a multi-stage build. Stage 1: Maven compile. Stage 2: Tomcat runtime. Final image ~180MB.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────── -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-inner">
+            <div class="footer-left">
+                <strong style="color:var(--text);">DevOps Project 1</strong> — Java Todo Application<br>
+                Spring Boot 3.2.5 · Java 17 · Apache Maven · Tomcat 10 · H2 · Spring Actuator
+            </div>
+            <div class="footer-right">
+                <a href="/todo-app/api/todos" class="footer-link" target="_blank">API</a>
+                <a href="/todo-app/actuator/health" class="footer-link" target="_blank">Health</a>
+                <a href="/todo-app/h2-console" class="footer-link" target="_blank">Database</a>
+                <a href="/todo-app/api/info" class="footer-link" target="_blank">Info</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // ── Scroll reveal ──────────────────────────────────────────
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal, .stagger').forEach(el => observer.observe(el));
+
+    // ── Fetch stats ────────────────────────────────────────────
+    async function loadStats() {
+        try {
+            const r = await fetch('api/todos/stats');
+            const d = await r.json();
+            document.getElementById('stat-total').textContent     = d.total     ?? '—';
+            document.getElementById('stat-completed').textContent = d.completed ?? '—';
+            document.getElementById('stat-pending').textContent   = d.pending   ?? '—';
+        } catch(e) {
+            ['stat-total','stat-completed','stat-pending'].forEach(id => document.getElementById(id).textContent = 'N/A');
+        }
+    }
+
+    // ── Fetch todos ────────────────────────────────────────────
+    async function loadTodos() {
+        const container = document.getElementById('todo-list');
+        try {
+            const r = await fetch('api/todos');
+            const todos = await r.json();
+            if (!todos.length) { container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No todos found.</div>'; return; }
+            container.innerHTML = todos.slice(0,8).map((t,i) => `
+                <div class="todo-item" style="animation-delay:${i*0.06}s">
+                    <div class="todo-check ${t.completed ? 'done' : ''}">
+                        ${t.completed ? '✓' : ''}
+                    </div>
+                    <span class="todo-text ${t.completed ? 'done' : ''}">${escHtml(t.title)}</span>
+                    <span class="todo-priority pri-${t.priority.toLowerCase()}">${t.priority}</span>
+                </div>`).join('');
+        } catch(e) {
+            container.innerHTML = '<div style="color:var(--accent);font-size:11px;">Unable to connect — is the server running?</div>';
+        }
+    }
+
+    // ── Fetch app info ─────────────────────────────────────────
+    async function loadInfo() {
+        const el = document.getElementById('live-output');
+        try {
+            const r = await fetch('api/info');
+            const d = await r.json();
+            const lines = Object.entries(d)
+                .filter(([k]) => k !== 'endpoints')
+                .map(([k,v]) => `<span style="color:var(--accent2)">${k.padEnd(18)}</span><span style="color:var(--accent3)">${v}</span>`)
+                .join('\n');
+            const eps = d.endpoints
+                ? '\n\n<span style="color:var(--text-muted)">endpoints:</span>\n' + d.endpoints.map(e => `  <span style="color:var(--text-dim)">${e}</span>`).join('\n')
+                : '';
+            el.innerHTML = lines + eps;
+        } catch(e) {
+            el.innerHTML = '<span style="color:var(--accent)">Unable to reach /api/info\nEnsure Tomcat is running and WAR is deployed.</span>';
+        }
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Init ───────────────────────────────────────────────────
+    loadStats();
+    loadTodos();
+    loadInfo();
+
+    // Refresh every 30 seconds
+    setInterval(() => { loadStats(); loadTodos(); loadInfo(); }, 30000);
+</script>
+</body>
+</html>
